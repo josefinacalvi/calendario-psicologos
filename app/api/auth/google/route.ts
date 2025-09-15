@@ -1,31 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthUrl } from '@/lib/google-calendar';
-import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!
-);
-
-export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const psychologistId = searchParams.get('psychologist_id');
-  
-  if (!psychologistId) {
-    return NextResponse.json({ error: 'Missing psychologist_id' }, { status: 400 });
-  }
-  
-  const { data: psychologist, error } = await supabase
-    .from('psychologists')
-    .select('id, name')
-    .eq('id', psychologistId)
-    .single();
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
     
-  if (error || !psychologist) {
-    return NextResponse.json({ error: 'Psychologist not found' }, { status: 404 });
+    // Reenviar a n8n
+    const response = await fetch('https://primary-production-ceb9.up.railway.app/webhook/upload-cv', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // No incluyas Content-Type, deja que se auto-configure para multipart/form-data
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Error from n8n');
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    return NextResponse.json(
+      { error: 'Error processing CV' },
+      { status: 500 }
+    );
   }
-  
-  const authUrl = getAuthUrl(psychologistId);
-  
-  return NextResponse.redirect(authUrl);
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 200 });
 }

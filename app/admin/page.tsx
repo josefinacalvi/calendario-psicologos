@@ -18,7 +18,7 @@ export default function AdminUpload() {
     formData.append('filename', file.name);
 
     try {
-      const response = await fetch('https://primary-production-ceb9.up.railway.app/webhook/upload-cv', {
+      const response = await fetch('/api/upload-cv', {
         method: 'POST',
         body: formData
       });
