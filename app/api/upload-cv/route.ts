@@ -21,8 +21,9 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('Upload error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: 'Error processing CV', details: error.message },
+      { error: 'Error processing CV', details: errorMessage },
       { status: 500 }
     );
   }
