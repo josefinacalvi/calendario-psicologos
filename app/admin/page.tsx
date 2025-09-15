@@ -6,8 +6,8 @@ export default function AdminUpload() {
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
@@ -24,7 +24,6 @@ export default function AdminUpload() {
       });
 
       if (response.ok) {
-        const result = await response.json();
         setMessage('✅ CV procesado correctamente');
       } else {
         setMessage('❌ Error al procesar el CV');

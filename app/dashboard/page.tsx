@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export default function Dashboard() {
   const [psychologists] = useState([
@@ -18,7 +18,7 @@ export default function Dashboard() {
     appointments_week: 47
   };
 
-  const handleConnectCalendar = (id) => {
+  const handleConnectCalendar = (id: number) => {
     window.location.href = `/api/auth/google?psychologist_id=${id}`;
   };
 
@@ -32,7 +32,7 @@ export default function Dashboard() {
 
   const statCardStyle = {
     ...cardStyle,
-    textAlign: 'center'
+    textAlign: 'center' as const
   };
 
   return (
@@ -105,8 +105,8 @@ export default function Dashboard() {
                         <button 
                           onClick={() => handleConnectCalendar(psy.id)}
                           style={{ color: '#2563eb', cursor: 'pointer', fontSize: '14px', fontWeight: '500', background: 'none', border: 'none', textDecoration: 'none' }}
-                          onMouseOver={(e) => e.target.style.color = '#1d4ed8'}
-                          onMouseOut={(e) => e.target.style.color = '#2563eb'}
+                          onMouseOver={(e) => e.currentTarget.style.color = '#1d4ed8'}
+                          onMouseOut={(e) => e.currentTarget.style.color = '#2563eb'}
                         >
                           🔗 Conectar Calendar
                         </button>
@@ -128,7 +128,7 @@ export default function Dashboard() {
             ¿Cómo funciona?
           </h3>
           <ol style={{ paddingLeft: '20px', color: '#1e40af', lineHeight: '1.8' }}>
-            <li>Cada psicólogo conecta su Google Calendar haciendo click en "Conectar Calendar"</li>
+            <li>Cada psicólogo conecta su Google Calendar haciendo click en Conectar Calendar</li>
             <li>El sistema sincroniza automáticamente los eventos cada 15 minutos</li>
             <li>Los pacientes solo ven los horarios realmente disponibles</li>
             <li>Las citas se crean automáticamente en el Google Calendar del psicólogo</li>
