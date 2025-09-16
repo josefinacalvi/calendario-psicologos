@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     
     // Enviar a n8n webhook
-    const response = await fetch('https://primary-production-ceb9.up.railway.app/webhook/upload-cv', {
+    const response = await fetch('https://primary-production-439de.up.railway.app/webhook/upload-cv', {
       method: 'POST',
       body: formData
     });
