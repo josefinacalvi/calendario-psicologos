@@ -1,34 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { google } from 'googleapis';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
-  try {
-    const formData = await request.formData();
-    
-    // Reenviar a n8n
-    const response = await fetch('https://primary-production-ceb9.up.railway.app/webhook/upload-cv', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // No incluyas Content-Type, deja que se auto-configure para multipart/form-data
-      }
-    });
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/google/callback`
+);
 
-    if (!response.ok) {
-      throw new Error('Error from n8n');
-    }
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const psychologistId = searchParams.get('psychologist_id');
+  const redirect = searchParams.get('redirect') || '/dashboard';
 
-    const data = await response.json();
-    return NextResponse.json(data);
-    
-  } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json(
-      { error: 'Error processing CV' },
-      { status: 500 }
-    );
+  if (!psychologistId) {
+    return NextResponse.json({ error: 'Psychologist ID is required' }, { status: 400 });
   }
-}
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 200 });
+  const scopes = [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/userinfo.email'
+  ];
+
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: scopes,
+    state: JSON.stringify({ psychologistId, redirect }),
+    prompt: 'consent'
+  });
+
+  return NextResponse.redirect(authUrl);
 }
