@@ -22,7 +22,7 @@ export default function OnboardingPage() {
   const [psychologistId, setPsychologistId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileSelect = (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -229,7 +229,7 @@ export default function OnboardingPage() {
 // Step 1 Component
 interface Step1UploadProps {
   selectedFile: File | null;
-  fileInputRef: React.RefObject<HTMLInputElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;  // <-- ESTA LÍNEA
   isLoading: boolean;
   onFileSelect: (file: File) => void;
   onDrop: (e: React.DragEvent) => void;
