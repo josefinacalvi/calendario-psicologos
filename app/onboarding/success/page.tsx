@@ -1,4 +1,3 @@
-// app/onboarding/success/page.tsx
 'use client';
 
 import { useRouter } from 'next/navigation';
@@ -79,3 +78,4 @@ export default function OnboardingSuccess() {
       </div>
     </div>
   );
+}

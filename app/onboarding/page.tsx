@@ -63,7 +63,7 @@ export default function OnboardingPage() {
       } else {
         throw new Error('Error al procesar el CV');
       }
-    } catch (error) {
+    } catch {
       alert('Error al procesar el CV. Por favor, intente nuevamente.');
     } finally {
       setIsLoading(false);
@@ -82,8 +82,8 @@ export default function OnboardingPage() {
         setEmailError('Este email ya está registrado en el sistema.');
         return false;
       }
-    } catch (error) {
-      console.error('Error checking email:', error);
+    } catch {
+      console.error('Error checking email');
     }
     
     setExtractedData(formData);
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
       } else {
         throw new Error('Error al guardar los datos');
       }
-    } catch (error) {
+    } catch {
       alert('Error al guardar los datos. Por favor, intente nuevamente.');
     } finally {
       setIsLoading(false);
@@ -227,7 +227,17 @@ export default function OnboardingPage() {
 }
 
 // Step 1 Component
-function Step1Upload({ selectedFile, fileInputRef, isLoading, onFileSelect, onDrop, onUpload, onRemoveFile }: any) {
+interface Step1UploadProps {
+  selectedFile: File | null;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  isLoading: boolean;
+  onFileSelect: (file: File) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onUpload: () => void;
+  onRemoveFile: () => void;
+}
+
+function Step1Upload({ selectedFile, fileInputRef, isLoading, onFileSelect, onDrop, onUpload, onRemoveFile }: Step1UploadProps) {
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Paso 1: Suba su CV</h2>
@@ -289,7 +299,14 @@ function Step1Upload({ selectedFile, fileInputRef, isLoading, onFileSelect, onDr
 }
 
 // Step 2 Component
-function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
+interface Step2ReviewProps {
+  extractedData: ExtractedData | null;
+  emailError: string;
+  onBack: () => void;
+  onSubmit: (data: ExtractedData) => void;
+}
+
+function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2ReviewProps) {
   const [formData, setFormData] = useState<ExtractedData>({
     nombre_completo: extractedData?.nombre_completo || '',
     email: extractedData?.email || '',
@@ -375,7 +392,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
           <label className="block text-sm font-medium text-gray-700 mb-1">Modalidad de Atención</label>
           <select
             value={formData.modalidad}
-            onChange={(e) => setFormData({...formData, modalidad: e.target.value as any})}
+            onChange={(e) => setFormData({...formData, modalidad: e.target.value as 'online' | 'presencial' | 'hybrid'})}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="online">Online</option>
@@ -441,7 +458,13 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
 }
 
 // Step 3 Component
-function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: any) {
+interface Step3CalendarProps {
+  isLoading: boolean;
+  onConnectCalendar: () => void;
+  onSkipCalendar: () => void;
+}
+
+function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Paso 3: Conecte su Google Calendar</h2>
