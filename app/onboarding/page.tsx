@@ -229,7 +229,7 @@ export default function OnboardingPage() {
 // Step 1 Component
 interface Step1UploadProps {
   selectedFile: File | null;
-  fileInputRef: React.RefObject<HTMLInputElement>;  // <-- ESTA LÍNEA
+  fileInputRef: React.RefObject<HTMLInputElement | null>;  // <-- ESTA LÍNEA
   isLoading: boolean;
   onFileSelect: (file: File) => void;
   onDrop: (e: React.DragEvent) => void;
