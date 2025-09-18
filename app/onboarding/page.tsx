@@ -1,39 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-interface ExtractedData {
-  nombre_completo: string;
-  email: string;
-  telefono: string;
-  años_experiencia: number;
-  especialidades: string[];
-  modalidad: 'online' | 'presencial' | 'hybrid';
-  sobre_mi: string;
-  formacion: string[];
-}
-
-interface Step1UploadProps {
-  selectedFile: File | null;
-  isLoading: boolean;
-  onFileSelect: (file: File) => void;
-}
-
-interface Step2ReviewProps {
-  extractedData: ExtractedData | null;
-  emailError: string;
-  isDisabled: boolean;
-  onSubmit: (formData: ExtractedData) => void;
-  onBack: () => void;
-}
-
-interface Step3CalendarProps {
-  isLoading: boolean;
-  isDisabled: boolean;
-  onConnectCalendar: () => void;
-  onSkipCalendar: () => void;
-}
+// Interfaces
+interface ExtractedData { nombre_completo: string; email: string; telefono: string; años_experiencia: number; especialidades: string[]; modalidad: 'online' | 'presencial' | 'hybrid'; sobre_mi: string; formacion: string[]; }
+interface StepProps { isDisabled: boolean; }
+interface Step1UploadProps extends StepProps { selectedFile: File | null; isLoading: boolean; onFileSelect: (file: File) => void; }
+interface Step2ReviewProps extends StepProps { extractedData: ExtractedData | null; emailError: string; onSubmit: (formData: ExtractedData) => void; onBack: () => void; }
+interface Step3CalendarProps extends StepProps { onConnectCalendar: () => void; onSkipCalendar: () => void; }
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -45,16 +20,8 @@ export default function OnboardingPage() {
   const [emailError, setEmailError] = useState('');
 
   const handleFileSelect = (file: File) => {
-    console.log('Archivo seleccionado:', file.name, file.type, file.size);
-    
-    if (file.type !== 'application/pdf') {
-      alert('Por favor, seleccione un archivo PDF');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      alert('El archivo no debe superar los 10MB');
-      return;
-    }
+    if (file.type !== 'application/pdf') { alert('Por favor, seleccione un archivo PDF'); return; }
+    if (file.size > 10 * 1024 * 1024) { alert('El archivo no debe superar los 10MB'); return; }
     setSelectedFile(file);
     handleUploadCV(file);
   };
@@ -63,29 +30,15 @@ export default function OnboardingPage() {
     setIsLoading(true);
     const formData = new FormData();
     formData.append('cv', file);
-    formData.append('filename', file.name);
-
-    console.log('Enviando archivo al webhook...');
-
     try {
-      const response = await fetch('/api/upload-cv', {
-        method: 'POST',
-        body: formData
-      });
-      
-      console.log('Respuesta del servidor:', response.status);
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Datos extraídos:', data);
-        setExtractedData(data);
-        setCurrentStep(2);
-      } else {
-        throw new Error('Error al procesar el CV');
-      }
+      const response = await fetch('/api/upload-cv', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Error del servidor al subir CV');
+      const data = await response.json();
+      setExtractedData(data);
+      setCurrentStep(2);
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al procesar el CV. Por favor, intente nuevamente.');
+      console.error("Error en handleUploadCV:", error);
+      alert('Error al procesar el CV. Por favor, intente de nuevo.');
       setSelectedFile(null);
     } finally {
       setIsLoading(false);
@@ -93,54 +46,33 @@ export default function OnboardingPage() {
   };
 
   const handleSaveData = async (formData: ExtractedData) => {
-    setEmailError('');
     setIsLoading(true);
+    setEmailError('');
     try {
-      const checkResponse = await fetch(`/api/check-email?email=${encodeURIComponent(formData.email)}`);
-      const checkData = await checkResponse.json();
-      if (checkData.exists) {
-        setEmailError('Este email ya está registrado en el sistema.');
-        setIsLoading(false);
-        return;
-      }
-    } catch { 
-      console.error('Error checking email'); 
-    }
-    
-    try {
-      const dataToSave = {
-        name: formData.nombre_completo, 
-        email: formData.email, 
-        phone: formData.telefono,
-        specialties: formData.especialidades, 
-        years_experience: formData.años_experiencia,
-        modality: formData.modalidad, 
-        bio: formData.sobre_mi, 
-        formacion: formData.formacion,
-        session_duration: 30, 
-        buffer_time: 15, 
-        hourly_rate: 100, 
-        currency: 'USD', 
-        is_active: true
-      };
-      
-      const response = await fetch('/api/psychologists', {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify(dataToSave)
-      });
-      
-      const result = await response.json();
-      if (response.ok && result.id) {
+        const checkResponse = await fetch(`/api/check-email?email=${encodeURIComponent(formData.email)}`);
+        const { exists } = await checkResponse.json();
+        if (exists) {
+            setEmailError('Este email ya está registrado.');
+            setIsLoading(false);
+            return;
+        }
+
+        const response = await fetch('/api/psychologists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: formData.nombre_completo, email: formData.email }) // Enviar solo lo necesario
+        });
+
+        if (!response.ok) throw new Error('Error al guardar psicólogo');
+        
+        const result = await response.json();
         setPsychologistId(result.id);
         setCurrentStep(3);
-      } else { 
-        throw new Error('Error al guardar los datos'); 
-      }
-    } catch { 
-      alert('Error al guardar los datos. Por favor, intente nuevamente.');
-    } finally { 
-      setIsLoading(false); 
+    } catch (error) {
+        console.error("Error en handleSaveData:", error);
+        alert('Error al guardar tus datos.');
+    } finally {
+        setIsLoading(false);
     }
   };
   
@@ -150,220 +82,114 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleSkipCalendar = () => {
-    router.push('/onboarding/success');
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      <div className="container mx-auto px-4 py-16 max-w-2xl">
+    <main className="min-h-screen p-4 sm:p-8 flex items-center justify-center">
+      <div className="w-full max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-slate-800 mb-3">Completa tu registro</h1>
-          <p className="text-slate-600 text-lg">Sigue estos 3 simples pasos para formar parte de nuestra red.</p>
+          <p className="text-slate-600 text-lg">Sigue estos 3 simples pasos.</p>
         </div>
-        <div className="space-y-8">
-          <Step1UploadCV 
+        <div className="space-y-6">
+          <Step1UploadCV
+            isDisabled={false}
             selectedFile={selectedFile}
             isLoading={isLoading && currentStep === 1}
             onFileSelect={handleFileSelect}
           />
-          <Step2Review 
+          <Step2Review
+            isDisabled={currentStep < 2}
             extractedData={extractedData}
             emailError={emailError}
-            isDisabled={currentStep < 2}
             onSubmit={handleSaveData}
-            onBack={() => {
-                setCurrentStep(1);
-                setSelectedFile(null);
-                setExtractedData(null);
-            }}
+            onBack={() => { setCurrentStep(1); setSelectedFile(null); setExtractedData(null); }}
           />
-          <Step3Calendar 
-            isLoading={isLoading && currentStep === 3}
+          <Step3Calendar
             isDisabled={currentStep < 3}
             onConnectCalendar={handleConnectCalendar}
-            onSkipCalendar={handleSkipCalendar}
+            onSkipCalendar={() => router.push('/onboarding/success')}
           />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
-// VERSIÓN CON INPUT VISIBLE PARA DEBUG
-function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Input change event triggered');
-    const file = e.target.files?.[0];
-    if (file) {
-      console.log('File selected from input:', file.name);
-      onFileSelect(file);
-    }
-  };
+// --- COMPONENTES DE CADA PASO ---
 
+function StepWrapper({ title, subtitle, isDisabled, children }: { title: string; subtitle: string; isDisabled: boolean; children: React.ReactNode }) {
+    return (
+        <fieldset disabled={isDisabled} className={`bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`}>
+            <h2 className="text-2xl font-semibold text-slate-800 mb-1">{title}</h2>
+            <p className="text-slate-500 mb-6">{subtitle}</p>
+            {children}
+        </fieldset>
+    );
+}
+
+function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
-      <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
-      <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
-      
-      <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-[52px]">
-            <div className="animate-spin h-6 w-6 border-4 border-slate-500 border-t-transparent rounded-full"></div>
-            <p className="ml-4 text-slate-600 font-medium">Procesando...</p>
-          </div>
-        ) : selectedFile ? (
-          <div className="text-center">
-            <p className="font-semibold text-green-700 mb-3">✓ Archivo seleccionado:</p>
-            <p className="text-sm text-slate-600 mb-3">{selectedFile.name}</p>
-            <p className="text-xs text-slate-500 mb-4">
-              Tamaño: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-            </p>
-            <div className="border-t pt-4">
-              <p className="text-sm text-slate-600 mb-2">¿Quieres cambiar el archivo?</p>
-              <input 
-                type="file" 
-                accept=".pdf,application/pdf" 
-                onChange={handleFileChange}
-                className="mx-auto"
-              />
-            </div>
-          </div>
-        ) : (
-          <div>
-            <div className="mb-4">
-              <svg className="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <p className="text-sm text-slate-600 mb-4">
-              Selecciona tu CV en formato PDF
-            </p>
-            {/* INPUT VISIBLE PARA DEBUG */}
-            <input 
-              type="file" 
-              accept=".pdf,application/pdf" 
-              onChange={handleFileChange}
-              className="mx-auto border-2 border-slate-300 rounded p-2"
+    <StepWrapper title="1. Sube tu CV" subtitle="Extraeremos tu información automáticamente." isDisabled={false}>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
+            <input
+                id="cv-upload" type="file" accept=".pdf" className="hidden"
+                onChange={(e) => { if (e.target.files?.[0]) onFileSelect(e.target.files[0]); }}
             />
-            <p className="text-xs text-slate-500 mt-4">
-              Tamaño máximo: 10MB
-            </p>
-          </div>
-        )}
-      </div>
-      
-      {/* INFORMACIÓN DE DEBUG */}
-      <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
-        <p>Debug Info:</p>
-        <p>- Input visible para testing</p>
-        <p>- Revisa la consola para ver logs</p>
-        <p>- Estado actual: {selectedFile ? 'Archivo seleccionado' : 'Sin archivo'}</p>
-      </div>
-    </div>
+            {isLoading ? (
+                <p className="font-medium text-slate-600">Procesando...</p>
+            ) : selectedFile ? (
+                <div>
+                    <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
+                    <label htmlFor="cv-upload" className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer">Cambiar archivo</label>
+                </div>
+            ) : (
+                <label htmlFor="cv-upload" className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer">
+                    Seleccionar CV en formato PDF
+                </label>
+            )}
+        </div>
+    </StepWrapper>
   );
 }
 
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
     const [formData, setFormData] = useState<ExtractedData | null>(null);
-    
-    useEffect(() => { 
-        if (extractedData) setFormData(extractedData); 
-    }, [extractedData]);
-    
-    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
-    
+    useEffect(() => { if (extractedData) setFormData(extractedData); }, [extractedData]);
+
     if (!extractedData) {
-        return (
-            <div className={componentClasses}>
-                <fieldset disabled={true}>
-                    <h2 className="text-2xl font-semibold text-slate-400 mb-1">2. Revisa tu Información</h2>
-                    <p className="text-slate-400">Completa el paso anterior para continuar.</p>
-                </fieldset>
-            </div>
-        );
+        return <StepWrapper title="2. Revisa tu Información" subtitle="Completa el paso anterior para continuar." isDisabled={true}><div/></StepWrapper>;
     }
-    
     if (!formData) return null;
-    
-    const handleSubmit = (e: React.FormEvent) => { 
-        e.preventDefault(); 
-        onSubmit(formData); 
-    };
-    
+
     return (
-        <div className={componentClasses}>
-            <fieldset disabled={isDisabled}>
-                <h2 className="text-2xl font-semibold text-slate-800 mb-1">2. Revisa tu Información</h2>
-                <p className="text-slate-500 mb-6">Asegúrate de que todo esté correcto antes de continuar.</p>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
-                            <input 
-                                type="text" 
-                                value={formData.nombre_completo} 
-                                onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} 
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg" 
-                                required 
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
-                            <input 
-                                type="email" 
-                                value={formData.email} 
-                                onChange={(e) => setFormData({...formData, email: e.target.value})} 
-                                className="w-full px-4 py-2 border border-slate-300 rounded-lg" 
-                                required 
-                            />
-                        </div>
+        <StepWrapper title="2. Revisa tu Información" subtitle="Asegúrate de que todo esté correcto." isDisabled={isDisabled}>
+            <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
+                        <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     </div>
-                    {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
-                    <div className="flex gap-4 pt-4">
-                        <button 
-                            type="button" 
-                            onClick={onBack} 
-                            className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300"
-                        >
-                            Subir otro CV
-                        </button>
-                        <button 
-                            type="submit" 
-                            className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700"
-                        >
-                            Guardar y Continuar
-                        </button>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                        <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     </div>
-                </form>
-            </fieldset>
-        </div>
+                </div>
+                {emailError && <p className="text-red-500 text-sm">{emailError}</p>}
+                <div className="flex gap-4 pt-2">
+                    <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Subir otro</button>
+                    <button type="submit" className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700">Guardar y Continuar</button>
+                </div>
+            </form>
+        </StepWrapper>
     );
 }
 
 function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
-    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
-    
     return (
-        <div className={componentClasses}>
-            <fieldset disabled={isDisabled}>
-                <h2 className="text-2xl font-semibold text-slate-800 mb-1">3. Conecta tu Calendario</h2>
-                <p className="text-slate-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <button 
-                        onClick={onConnectCalendar} 
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-                    >
-                        Conectar Google Calendar
-                    </button>
-                    <button 
-                        onClick={onSkipCalendar} 
-                        className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300"
-                    >
-                        Omitir por ahora
-                    </button>
-                </div>
-            </fieldset>
-        </div>
+        <StepWrapper title="3. Conecta tu Calendario" subtitle="Sincroniza tu Google Calendar." isDisabled={isDisabled}>
+            <div className="flex flex-col sm:flex-row gap-4">
+                <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Conectar Google Calendar</button>
+                <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Omitir por ahora</button>
+            </div>
+        </StepWrapper>
     );
 }
