@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ... (las interfaces no cambian)
 interface ExtractedData {
   nombre_completo: string;
   email: string;
@@ -14,11 +13,13 @@ interface ExtractedData {
   sobre_mi: string;
   formacion: string[];
 }
+
 interface Step1UploadProps {
   selectedFile: File | null;
   isLoading: boolean;
   onFileSelect: (file: File) => void;
 }
+
 interface Step2ReviewProps {
   extractedData: ExtractedData | null;
   emailError: string;
@@ -26,6 +27,7 @@ interface Step2ReviewProps {
   onSubmit: (formData: ExtractedData) => void;
   onBack: () => void;
 }
+
 interface Step3CalendarProps {
   isLoading: boolean;
   isDisabled: boolean;
@@ -92,24 +94,45 @@ export default function OnboardingPage() {
         setIsLoading(false);
         return;
       }
-    } catch { console.error('Error checking email'); }
+    } catch { 
+      console.error('Error checking email'); 
+    }
+    
     try {
       const dataToSave = {
-        name: formData.nombre_completo, email: formData.email, phone: formData.telefono,
-        specialties: formData.especialidades, years_experience: formData.años_experiencia,
-        modality: formData.modalidad, bio: formData.sobre_mi, formacion: formData.formacion,
-        session_duration: 30, buffer_time: 15, hourly_rate: 100, currency: 'USD', is_active: true
+        name: formData.nombre_completo, 
+        email: formData.email, 
+        phone: formData.telefono,
+        specialties: formData.especialidades, 
+        years_experience: formData.años_experiencia,
+        modality: formData.modalidad, 
+        bio: formData.sobre_mi, 
+        formacion: formData.formacion,
+        session_duration: 30, 
+        buffer_time: 15, 
+        hourly_rate: 100, 
+        currency: 'USD', 
+        is_active: true
       };
+      
       const response = await fetch('/api/psychologists', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dataToSave)
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify(dataToSave)
       });
+      
       const result = await response.json();
       if (response.ok && result.id) {
         setPsychologistId(result.id);
         setCurrentStep(3);
-      } else { throw new Error('Error al guardar los datos'); }
-    } catch { alert('Error al guardar los datos. Por favor, intente nuevamente.');
-    } finally { setIsLoading(false); }
+      } else { 
+        throw new Error('Error al guardar los datos'); 
+      }
+    } catch { 
+      alert('Error al guardar los datos. Por favor, intente nuevamente.');
+    } finally { 
+      setIsLoading(false); 
+    }
   };
   
   const handleConnectCalendar = () => {
@@ -158,22 +181,33 @@ export default function OnboardingPage() {
   );
 }
 
-// --- COMPONENTES DE CADA PASO ---
-
-// ✅ NUEVA VERSIÓN DEL COMPONENTE CON <label> PARA MAYOR FIABILIDAD
+// COMPONENTE STEP 1 - CORREGIDO
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleButtonClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      onFileSelect(file);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
       <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
       <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
       <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center flex items-center justify-center">
-        {/* El input ahora se asocia con la etiqueta 'label' a través del 'id' */}
         <input 
-          id="cv-upload-input" 
+          ref={fileInputRef}
           type="file" 
-          accept=".pdf" 
+          accept=".pdf,application/pdf" 
           className="hidden"
-          onChange={(e) => { if (e.target.files?.[0]) { onFileSelect(e.target.files[0]); } }}
+          onChange={handleFileChange}
+          disabled={isLoading}
         />
         
         {isLoading ? (
@@ -184,25 +218,38 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
         ) : selectedFile ? (
           <div className="text-center h-[52px] flex flex-col justify-center">
             <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
-            <label htmlFor="cv-upload-input" className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer">
+            <button 
+              type="button"
+              onClick={handleButtonClick}
+              className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer"
+            >
               Cambiar archivo
-            </label>
+            </button>
           </div>
         ) : (
-          <label htmlFor="cv-upload-input" className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer">
+          <button
+            type="button"
+            onClick={handleButtonClick}
+            className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
+          >
             Seleccionar CV en formato PDF
-          </label>
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-// El resto de los componentes (Step2Review y Step3Calendar) se mantienen igual que en la respuesta anterior
+// COMPONENTE STEP 2
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
     const [formData, setFormData] = useState<ExtractedData | null>(null);
-    useEffect(() => { if (extractedData) setFormData(extractedData); }, [extractedData]);
+    
+    useEffect(() => { 
+        if (extractedData) setFormData(extractedData); 
+    }, [extractedData]);
+    
     const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
+    
     if (!extractedData) {
         return (
             <div className={componentClasses}>
@@ -213,8 +260,14 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
             </div>
         );
     }
+    
     if (!formData) return null;
-    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); onSubmit(formData); };
+    
+    const handleSubmit = (e: React.FormEvent) => { 
+        e.preventDefault(); 
+        onSubmit(formData); 
+    };
+    
     return (
         <div className={componentClasses}>
             <fieldset disabled={isDisabled}>
@@ -224,17 +277,40 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
-                            <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg" required />
+                            <input 
+                                type="text" 
+                                value={formData.nombre_completo} 
+                                onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} 
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg" 
+                                required 
+                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
-                            <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg" required />
+                            <input 
+                                type="email" 
+                                value={formData.email} 
+                                onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                                className="w-full px-4 py-2 border border-slate-300 rounded-lg" 
+                                required 
+                            />
                         </div>
                     </div>
                     {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
                     <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Subir otro CV</button>
-                        <button type="submit" className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700">Guardar y Continuar</button>
+                        <button 
+                            type="button" 
+                            onClick={onBack} 
+                            className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300"
+                        >
+                            Subir otro CV
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700"
+                        >
+                            Guardar y Continuar
+                        </button>
                     </div>
                 </form>
             </fieldset>
@@ -242,16 +318,28 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
     );
 }
 
+// COMPONENTE STEP 3
 function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
     const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
+    
     return (
         <div className={componentClasses}>
             <fieldset disabled={isDisabled}>
                 <h2 className="text-2xl font-semibold text-slate-800 mb-1">3. Conecta tu Calendario</h2>
                 <p className="text-slate-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Conectar Google Calendar</button>
-                    <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Omitir por ahora</button>
+                    <button 
+                        onClick={onConnectCalendar} 
+                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
+                    >
+                        Conectar Google Calendar
+                    </button>
+                    <button 
+                        onClick={onSkipCalendar} 
+                        className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300"
+                    >
+                        Omitir por ahora
+                    </button>
                 </div>
             </fieldset>
         </div>
