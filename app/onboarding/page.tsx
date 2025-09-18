@@ -45,6 +45,8 @@ export default function OnboardingPage() {
   const [emailError, setEmailError] = useState('');
 
   const handleFileSelect = (file: File) => {
+    console.log('Archivo seleccionado:', file.name, file.type, file.size);
+    
     if (file.type !== 'application/pdf') {
       alert('Por favor, seleccione un archivo PDF');
       return;
@@ -63,19 +65,26 @@ export default function OnboardingPage() {
     formData.append('cv', file);
     formData.append('filename', file.name);
 
+    console.log('Enviando archivo al webhook...');
+
     try {
       const response = await fetch('/api/upload-cv', {
         method: 'POST',
         body: formData
       });
+      
+      console.log('Respuesta del servidor:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Datos extraídos:', data);
         setExtractedData(data);
         setCurrentStep(2);
       } else {
         throw new Error('Error al procesar el CV');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error:', error);
       alert('Error al procesar el CV. Por favor, intente nuevamente.');
       setSelectedFile(null);
     } finally {
@@ -181,11 +190,13 @@ export default function OnboardingPage() {
   );
 }
 
-// VERSIÓN SIMPLE QUE FUNCIONA
+// VERSIÓN CON INPUT VISIBLE PARA DEBUG
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Input change event triggered');
     const file = e.target.files?.[0];
     if (file) {
+      console.log('File selected from input:', file.name);
       onFileSelect(file);
     }
   };
@@ -194,36 +205,60 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
       <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
       <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
-      <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center flex items-center justify-center">
+      
+      <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
         {isLoading ? (
           <div className="flex items-center justify-center h-[52px]">
             <div className="animate-spin h-6 w-6 border-4 border-slate-500 border-t-transparent rounded-full"></div>
             <p className="ml-4 text-slate-600 font-medium">Procesando...</p>
           </div>
         ) : selectedFile ? (
-          <div className="text-center h-[52px] flex flex-col justify-center">
-            <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
-            <label className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer">
-              Cambiar archivo
+          <div className="text-center">
+            <p className="font-semibold text-green-700 mb-3">✓ Archivo seleccionado:</p>
+            <p className="text-sm text-slate-600 mb-3">{selectedFile.name}</p>
+            <p className="text-xs text-slate-500 mb-4">
+              Tamaño: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+            </p>
+            <div className="border-t pt-4">
+              <p className="text-sm text-slate-600 mb-2">¿Quieres cambiar el archivo?</p>
               <input 
                 type="file" 
-                accept=".pdf" 
-                className="hidden"
+                accept=".pdf,application/pdf" 
                 onChange={handleFileChange}
+                className="mx-auto"
               />
-            </label>
+            </div>
           </div>
         ) : (
-          <label className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer inline-block">
-            Seleccionar CV en formato PDF
+          <div>
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-slate-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <p className="text-sm text-slate-600 mb-4">
+              Selecciona tu CV en formato PDF
+            </p>
+            {/* INPUT VISIBLE PARA DEBUG */}
             <input 
               type="file" 
-              accept=".pdf" 
-              className="hidden"
+              accept=".pdf,application/pdf" 
               onChange={handleFileChange}
+              className="mx-auto border-2 border-slate-300 rounded p-2"
             />
-          </label>
+            <p className="text-xs text-slate-500 mt-4">
+              Tamaño máximo: 10MB
+            </p>
+          </div>
         )}
+      </div>
+      
+      {/* INFORMACIÓN DE DEBUG */}
+      <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
+        <p>Debug Info:</p>
+        <p>- Input visible para testing</p>
+        <p>- Revisa la consola para ver logs</p>
+        <p>- Estado actual: {selectedFile ? 'Archivo seleccionado' : 'Sin archivo'}</p>
       </div>
     </div>
   );
