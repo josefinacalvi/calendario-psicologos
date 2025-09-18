@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// ... (las interfaces ExtractedData, Step1UploadProps, etc. se mantienen igual)
+// ... (las interfaces no cambian)
 interface ExtractedData {
   nombre_completo: string;
   email: string;
@@ -32,7 +32,6 @@ interface Step3CalendarProps {
   onConnectCalendar: () => void;
   onSkipCalendar: () => void;
 }
-
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -63,12 +62,10 @@ export default function OnboardingPage() {
     formData.append('filename', file.name);
 
     try {
-      // Usamos una ruta relativa para la API, Next.js se encarga del resto
       const response = await fetch('/api/upload-cv', {
         method: 'POST',
         body: formData
       });
-
       if (response.ok) {
         const data = await response.json();
         setExtractedData(data);
@@ -163,16 +160,22 @@ export default function OnboardingPage() {
 
 // --- COMPONENTES DE CADA PASO ---
 
+// ✅ NUEVA VERSIÓN DEL COMPONENTE CON <label> PARA MAYOR FIABILIDAD
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
       <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
       <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
       <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center flex items-center justify-center">
-        <input ref={fileInputRef} type="file" accept=".pdf" className="hidden"
+        {/* El input ahora se asocia con la etiqueta 'label' a través del 'id' */}
+        <input 
+          id="cv-upload-input" 
+          type="file" 
+          accept=".pdf" 
+          className="hidden"
           onChange={(e) => { if (e.target.files?.[0]) { onFileSelect(e.target.files[0]); } }}
         />
+        
         {isLoading ? (
           <div className="flex items-center justify-center h-[52px]">
             <div className="animate-spin h-6 w-6 border-4 border-slate-500 border-t-transparent rounded-full"></div>
@@ -181,33 +184,25 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
         ) : selectedFile ? (
           <div className="text-center h-[52px] flex flex-col justify-center">
             <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
-            <button onClick={() => fileInputRef.current?.click()}
-              className="mt-1 text-sm text-slate-600 hover:underline font-medium">
+            <label htmlFor="cv-upload-input" className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer">
               Cambiar archivo
-            </button>
+            </label>
           </div>
         ) : (
-          <button onClick={() => fileInputRef.current?.click()}
-            className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors">
+          <label htmlFor="cv-upload-input" className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer">
             Seleccionar CV en formato PDF
-          </button>
+          </label>
         )}
       </div>
     </div>
   );
 }
 
+// El resto de los componentes (Step2Review y Step3Calendar) se mantienen igual que en la respuesta anterior
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
     const [formData, setFormData] = useState<ExtractedData | null>(null);
-
-    useEffect(() => {
-        if (extractedData) setFormData(extractedData);
-    }, [extractedData]);
-
-    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${
-        isDisabled ? 'opacity-50' : 'opacity-100'
-    }`;
-
+    useEffect(() => { if (extractedData) setFormData(extractedData); }, [extractedData]);
+    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
     if (!extractedData) {
         return (
             <div className={componentClasses}>
@@ -219,11 +214,7 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
         );
     }
     if (!formData) return null;
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        onSubmit(formData);
-    };
-  
+    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); onSubmit(formData); };
     return (
         <div className={componentClasses}>
             <fieldset disabled={isDisabled}>
@@ -242,12 +233,8 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
                     </div>
                     {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
                     <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">
-                            Subir otro CV
-                        </button>
-                        <button type="submit" className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700">
-                            Guardar y Continuar
-                        </button>
+                        <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Subir otro CV</button>
+                        <button type="submit" className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700">Guardar y Continuar</button>
                     </div>
                 </form>
             </fieldset>
@@ -256,22 +243,15 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
 }
 
 function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
-    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${
-        isDisabled ? 'opacity-50' : 'opacity-100'
-    }`;
-    
+    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
     return (
         <div className={componentClasses}>
             <fieldset disabled={isDisabled}>
                 <h2 className="text-2xl font-semibold text-slate-800 mb-1">3. Conecta tu Calendario</h2>
                 <p className="text-slate-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                    <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-                        Conectar Google Calendar
-                    </button>
-                    <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">
-                        Omitir por ahora
-                    </button>
+                    <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Conectar Google Calendar</button>
+                    <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Omitir por ahora</button>
                 </div>
             </fieldset>
         </div>
