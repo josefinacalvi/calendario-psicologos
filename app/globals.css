@@ -3,6 +3,6 @@
 @tailwind utilities;
 
 body {
-  background-color: #f8fafc; /* Color de fondo simple (slate-50) */
+  background-color: #f8fafc; /* slate-50 */
   font-family: sans-serif;
 }

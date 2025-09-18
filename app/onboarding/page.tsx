@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// ... (El resto del código de page.tsx se mantiene exactamente igual que en la respuesta anterior)
 // Interfaces
 interface ExtractedData { nombre_completo: string; email: string; telefono: string; años_experiencia: number; especialidades: string[]; modalidad: 'online' | 'presencial' | 'hybrid'; sobre_mi: string; formacion: string[]; }
 interface StepProps { isDisabled: boolean; }
