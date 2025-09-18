@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface ExtractedData {
@@ -181,14 +181,8 @@ export default function OnboardingPage() {
   );
 }
 
-// COMPONENTE STEP 1 - CORREGIDO
+// VERSIÓN SIMPLE QUE FUNCIONA
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -201,15 +195,6 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
       <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
       <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
       <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center flex items-center justify-center">
-        <input 
-          ref={fileInputRef}
-          type="file" 
-          accept=".pdf,application/pdf" 
-          className="hidden"
-          onChange={handleFileChange}
-          disabled={isLoading}
-        />
-        
         {isLoading ? (
           <div className="flex items-center justify-center h-[52px]">
             <div className="animate-spin h-6 w-6 border-4 border-slate-500 border-t-transparent rounded-full"></div>
@@ -218,29 +203,32 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
         ) : selectedFile ? (
           <div className="text-center h-[52px] flex flex-col justify-center">
             <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
-            <button 
-              type="button"
-              onClick={handleButtonClick}
-              className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer"
-            >
+            <label className="mt-1 text-sm text-slate-600 hover:underline font-medium cursor-pointer">
               Cambiar archivo
-            </button>
+              <input 
+                type="file" 
+                accept=".pdf" 
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={handleButtonClick}
-            className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer"
-          >
+          <label className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors cursor-pointer inline-block">
             Seleccionar CV en formato PDF
-          </button>
+            <input 
+              type="file" 
+              accept=".pdf" 
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </label>
         )}
       </div>
     </div>
   );
 }
 
-// COMPONENTE STEP 2
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
     const [formData, setFormData] = useState<ExtractedData | null>(null);
     
@@ -318,7 +306,6 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
     );
 }
 
-// COMPONENTE STEP 3
 function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
     const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${isDisabled ? 'opacity-50' : 'opacity-100'}`;
     
