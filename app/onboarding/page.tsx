@@ -65,7 +65,7 @@ export default function OnboardingPage() {
     formData.append('filename', file.name);
 
     try {
-      const response = await fetch('https://primary-production-439de.up.railway.app/webhook/upload-cv', {
+      const response = await fetch('/api/upload-cv', { // Usar ruta relativa
         method: 'POST',
         body: formData
       });
@@ -88,7 +88,6 @@ export default function OnboardingPage() {
   const handleSaveData = async (formData: ExtractedData) => {
     setEmailError('');
     setIsLoading(true);
-    // ... (resto de la función sin cambios)
     try {
       const checkResponse = await fetch(`/api/check-email?email=${encodeURIComponent(formData.email)}`);
       const checkData = await checkResponse.json();
@@ -128,11 +127,15 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-16 max-w-3xl">
+    <div className="min-h-screen bg-slate-50 font-sans">
+      <div className="container mx-auto px-4 py-16 max-w-2xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-800 mb-3">Completa tu registro</h1>
-          <p className="text-gray-600 text-lg">Sigue estos 3 simples pasos para formar parte de nuestra red.</p>
+          <h1 className="text-4xl font-bold text-slate-800 mb-3">
+            Completa tu registro
+          </h1>
+          <p className="text-slate-600 text-lg">
+            Sigue estos 3 simples pasos para formar parte de nuestra red.
+          </p>
         </div>
         <div className="space-y-8">
           <Step1UploadCV 
@@ -165,35 +168,38 @@ export default function OnboardingPage() {
 
 // --- COMPONENTES DE CADA PASO ---
 
-// PASO 1: AHORA SIN ICONO NI DRAG-DROP
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-8">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-1">1. Sube tu CV</h2>
-      <p className="text-gray-500 mb-6">Extraeremos tu información automáticamente.</p>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+      <h2 className="text-2xl font-semibold text-slate-800 mb-1">1. Sube tu CV</h2>
+      <p className="text-slate-500 mb-6">Extraeremos tu información automáticamente.</p>
       
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center flex items-center justify-center">
+      <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center flex items-center justify-center">
         <input
           ref={fileInputRef}
           type="file"
           accept=".pdf"
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && onFileSelect(e.target.files[0])}
+          onChange={(e) => {
+            if (e.target.files?.[0]) {
+              onFileSelect(e.target.files[0]);
+            }
+          }}
         />
         
         {isLoading ? (
-          <div className="flex items-center justify-center">
-            <div className="animate-spin h-6 w-6 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-            <p className="ml-4 text-gray-600 font-medium">Procesando...</p>
+          <div className="flex items-center justify-center h-[52px]">
+            <div className="animate-spin h-6 w-6 border-4 border-slate-500 border-t-transparent rounded-full"></div>
+            <p className="ml-4 text-slate-600 font-medium">Procesando...</p>
           </div>
         ) : selectedFile ? (
-          <div className="text-center">
+          <div className="text-center h-[52px] flex flex-col justify-center">
             <p className="font-semibold text-green-700">✓ {selectedFile.name}</p>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="mt-2 text-sm text-blue-600 hover:underline font-medium"
+              className="mt-1 text-sm text-slate-600 hover:underline font-medium"
             >
               Cambiar archivo
             </button>
@@ -201,7 +207,7 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
         ) : (
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-700 transition-colors"
           >
             Seleccionar CV en formato PDF
           </button>
@@ -211,7 +217,6 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadPro
   );
 }
 
-// PASO 2: Revisar Información
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
     const [formData, setFormData] = useState<ExtractedData | null>(null);
 
@@ -219,76 +224,76 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
         if (extractedData) setFormData(extractedData);
     }, [extractedData]);
 
-    if (!formData) {
+    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${
+        isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
+    }`;
+
+    if (!extractedData) {
         return (
-            <div className={`bg-white rounded-xl shadow-md p-8 transition-opacity ${isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-                <h2 className="text-2xl font-semibold text-gray-400 mb-1">2. Revisa tu Información</h2>
-                <p className="text-gray-400">Completa el paso anterior para continuar.</p>
+            <div className={componentClasses}>
+                <h2 className="text-2xl font-semibold text-slate-400 mb-1">2. Revisa tu Información</h2>
+                <p className="text-slate-400">Completa el paso anterior para continuar.</p>
             </div>
-        )
+        );
     }
+
+    if (!formData) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (formData) onSubmit(formData);
+        onSubmit(formData);
     };
   
     return (
-        <div className={`bg-white rounded-xl shadow-md p-8 transition-opacity ${isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <fieldset disabled={isDisabled}>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-1">2. Revisa tu Información</h2>
-                <p className="text-gray-500 mb-6">Asegúrate de que todo esté correcto antes de continuar.</p>
-                
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                            <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                            <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
-                        </div>
+        <div className={componentClasses}>
+            <h2 className="text-2xl font-semibold text-slate-800 mb-1">2. Revisa tu Información</h2>
+            <p className="text-slate-500 mb-6">Asegúrate de que todo esté correcto antes de continuar.</p>
+            
+            <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Nombre Completo *</label>
+                        <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg" required />
                     </div>
-                    {/* Aquí puedes volver a agregar los demás campos del formulario si quieres */}
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Email *</label>
+                        <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-2 border border-slate-300 rounded-lg" required />
+                    </div>
+                </div>
 
-                    {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
-                    
-                    <div className="flex gap-4 pt-4">
-                        <button type="button" onClick={onBack} className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">
-                            Subir otro CV
-                        </button>
-                        <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
-                            Guardar y Continuar
-                        </button>
-                    </div>
-                </form>
-            </fieldset>
+                {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
+                
+                <div className="flex gap-4 pt-4">
+                    <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">
+                        Subir otro CV
+                    </button>
+                    <button type="submit" className="w-full bg-slate-800 text-white py-3 rounded-lg font-semibold hover:bg-slate-700">
+                        Guardar y Continuar
+                    </button>
+                </div>
+            </form>
         </div>
     );
 }
 
-// PASO 3: Conectar Calendario
-function Step3Calendar({ isLoading, isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
+function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
+    const componentClasses = `bg-white rounded-xl shadow-sm border border-slate-200 p-8 transition-opacity ${
+        isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
+    }`;
+    
     return (
-        <div className={`bg-white rounded-xl shadow-md p-8 transition-opacity ${isDisabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
-            <fieldset disabled={isDisabled}>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-1">3. Conecta tu Calendario</h2>
-                <p className="text-gray-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
-                
-                {isLoading ? (
-                    <div className="text-center py-4"><p className="text-gray-600">Guardando...</p></div>
-                ) : (
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <button onClick={onConnectCalendar} className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700">
-                            Conectar Google Calendar
-                        </button>
-                        <button onClick={onSkipCalendar} className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">
-                            Omitir por ahora
-                        </button>
-                    </div>
-                )}
-            </fieldset>
+        <div className={componentClasses}>
+            <h2 className="text-2xl font-semibold text-slate-800 mb-1">3. Conecta tu Calendario</h2>
+            <p className="text-slate-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+                <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">
+                    Conectar Google Calendar
+                </button>
+                <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">
+                    Omitir por ahora
+                </button>
+            </div>
         </div>
     );
 }
