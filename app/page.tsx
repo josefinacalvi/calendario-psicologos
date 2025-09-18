@@ -1,5 +1,4 @@
 
-cat > app/page.tsx << 'EOF'
 export default function Home() {
   return (
     <div style={{ padding: '40px', textAlign: 'center', fontFamily: 'system-ui' }}>
