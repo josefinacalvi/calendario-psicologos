@@ -267,7 +267,7 @@ export default function OnboardingPage() {
 }
 
 // Step 2 Component mejorado
-function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
+function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2ReviewProps) {
   const [formData, setFormData] = useState<ExtractedData>({
     nombre_completo: extractedData?.nombre_completo || '',
     email: extractedData?.email || '',
@@ -358,7 +358,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
           <label className="block text-sm font-medium text-gray-700 mb-2">Modalidad de Atención</label>
           <select
             value={formData.modalidad}
-            onChange={(e) => setFormData({...formData, modalidad: e.target.value as any})}
+            onChange={(e) => setFormData({...formData, modalidad: e.target.value as 'online' | 'presencial' | 'hybrid'})}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
           >
             <option value="online">Online</option>
@@ -423,7 +423,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: any) {
 }
 
 // Step 3 Component mejorado
-function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: any) {
+function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: Step2ReviewProps) {
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
