@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+// INTERFACES DEFINIDAS AQUÍ
 interface ExtractedData {
   nombre_completo: string;
   email: string;
@@ -13,6 +14,20 @@ interface ExtractedData {
   sobre_mi: string;
   formacion: string[];
 }
+
+interface Step2ReviewProps {
+  extractedData: ExtractedData | null;
+  emailError: string;
+  onBack: () => void;
+  onSubmit: (formData: ExtractedData) => void;
+}
+
+interface Step3CalendarProps {
+  isLoading: boolean;
+  onConnectCalendar: () => void;
+  onSkipCalendar: () => void;
+}
+
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -47,12 +62,12 @@ export default function OnboardingPage() {
   const handleUploadCV = async (file?: File) => {
     const fileToUpload = file || selectedFile;
     if (!fileToUpload) return;
-    
+
     setIsLoading(true);
     const formData = new FormData();
     formData.append('cv', fileToUpload);
     formData.append('filename', fileToUpload.name);
-    
+
     try {
       const response = await fetch('https://primary-production-439de.up.railway.app/webhook/upload-cv', {
         method: 'POST',
@@ -75,22 +90,22 @@ export default function OnboardingPage() {
 
   const handleSaveData = async (formData: ExtractedData) => {
     setEmailError('');
-    
+
     try {
       const checkResponse = await fetch(`/api/check-email?email=${encodeURIComponent(formData.email)}`);
       const checkData = await checkResponse.json();
-      
+
       if (checkData.exists) {
         setEmailError('Este email ya está registrado en el sistema.');
-        return false;
+        return;
       }
     } catch {
       console.error('Error checking email');
     }
-    
+
     setExtractedData(formData);
     setCurrentStep(3);
-    
+
     setIsLoading(true);
     try {
       const dataToSave = {
@@ -108,15 +123,15 @@ export default function OnboardingPage() {
         currency: 'USD',
         is_active: true
       };
-      
+
       const response = await fetch('/api/psychologists', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToSave)
       });
-      
+
       const result = await response.json();
-      
+
       if (response.ok && result.id) {
         setPsychologistId(result.id);
       } else {
@@ -156,7 +171,7 @@ export default function OnboardingPage() {
 
         {/* Progress bar sutil */}
         <div className="w-full bg-gray-200 rounded-full h-2 mb-8">
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
             style={{ width: `${(currentStep / 3) * 100}%` }}
           />
@@ -170,7 +185,7 @@ export default function OnboardingPage() {
               <div className="mb-8">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
                   <svg className="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
@@ -195,7 +210,7 @@ export default function OnboardingPage() {
                   className="hidden"
                   onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                 />
-                
+
                 {!selectedFile && !isLoading && (
                   <button
                     onClick={() => fileInputRef.current?.click()}
@@ -203,7 +218,7 @@ export default function OnboardingPage() {
                   >
                     <div className="flex items-center justify-center gap-3">
                       <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                       <span>Seleccionar CV</span>
@@ -289,7 +304,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2Revie
       <div className="text-center mb-6">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-3">
           <svg className="w-8 h-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
@@ -371,7 +386,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2Revie
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-5 rounded-xl">
           <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
             <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
             Configuración Estándar
@@ -395,7 +410,7 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2Revie
         {emailError && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             {emailError}
@@ -423,21 +438,21 @@ function Step2Review({ extractedData, emailError, onBack, onSubmit }: Step2Revie
 }
 
 // Step 3 Component mejorado
-function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: Step2ReviewProps) {
+function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
         <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
             d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       </div>
-      
+
       <h2 className="text-2xl font-semibold text-gray-800 mb-2">Conecte su Google Calendar</h2>
       <p className="text-gray-600 mb-8">
         Sincronice automáticamente sus citas y disponibilidad
       </p>
-      
+
       <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-6 mb-8">
         <h3 className="font-semibold text-gray-700 mb-4">Beneficios de conectar su calendario:</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
@@ -484,7 +499,7 @@ function Step3Calendar({ isLoading, onConnectCalendar, onSkipCalendar }: Step2Re
             </svg>
             Conectar con Google Calendar
           </button>
-          
+
           <button
             onClick={onSkipCalendar}
             className="w-full text-gray-600 py-3 px-6 font-medium hover:text-gray-800 transition-all"
