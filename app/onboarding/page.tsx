@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef } from 'react';
+// 1. Asegúrate de que useEffect esté importado aquí
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 // Interfaces (tipos) que necesita el componente
@@ -45,7 +46,9 @@ export default function OnboardingPage() {
   const [psychologistId, setPsychologistId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // 2. Eliminamos el useRef de aquí porque ya no es necesario en el componente padre
+  // const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleFileSelect = (file: File) => {
     if (file.type !== 'application/pdf') {
@@ -252,8 +255,8 @@ function Step1UploadCV({ selectedFile, isLoading, onFileSelect, onDrop }: Step1U
 function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }: Step2ReviewProps) {
   const [formData, setFormData] = useState<ExtractedData | null>(null);
 
-  // Sincronizar estado del formulario cuando los datos extraídos llegan
-  useState(() => {
+  // 3. ¡CORRECCIÓN! Cambiamos useState por useEffect
+  useEffect(() => {
     if (extractedData) {
       setFormData(extractedData);
     }
@@ -270,7 +273,9 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (formData) {
+      onSubmit(formData);
+    }
   };
   
   return (
@@ -280,20 +285,21 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
         <p className="text-gray-500 mb-6">Asegúrate de que todo esté correcto antes de continuar.</p>
         
         <form onSubmit={handleSubmit}>
-           {/* ... (el resto del formulario es idéntico al que ya tenías) ... */}
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-              <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
+           <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+                  <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                  <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
+                </div>
+              </div>
+              {/* Aquí irían los otros campos del formulario si los añades de nuevo */}
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-              <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-4 py-3 border border-gray-300 rounded-lg" required />
-            </div>
-          </div>
-          {/* ... otros campos del formulario ... */}
 
-          {emailError && <p className="text-red-500 text-sm">{emailError}</p>}
+          {emailError && <p className="text-red-500 text-sm mt-2">{emailError}</p>}
           
           <div className="flex gap-4 pt-4">
             <button type="button" onClick={onBack} className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">
@@ -318,13 +324,15 @@ function Step3Calendar({ isLoading, isDisabled, onConnectCalendar, onSkipCalenda
         <p className="text-gray-500 mb-6">Sincroniza tu Google Calendar para gestionar tu disponibilidad.</p>
         
         {isLoading ? (
-            <p>Guardando...</p>
+            <div className="text-center py-4">
+              <p className="text-gray-600">Guardando...</p>
+            </div>
         ) : (
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={onConnectCalendar} className="w-full bg-green-600 text-white py-3 rounded-lg font-semibold hover:bg-green-700">
                     Conectar Google Calendar
                 </button>
-                <button onClick={onSkipCalendar} className="w-full text-gray-600 py-3 font-medium hover:text-gray-800">
+                <button onClick={onSkipCalendar} className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300">
                     Omitir por ahora
                 </button>
             </div>
