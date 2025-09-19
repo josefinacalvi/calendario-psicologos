@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Interfaces (no cambian)
+// Interfaces
 interface ExtractedData { nombre_completo: string; email: string; telefono: string; años_experiencia: number; especialidades: string[]; modalidad: 'online' | 'presencial' | 'hybrid'; sobre_mi: string; formacion: string[]; }
 interface StepProps { isDisabled: boolean; }
 interface Step1UploadProps extends StepProps { selectedFile: File | null; isLoading: boolean; onFileSelect: (file: File) => void; }
@@ -19,13 +19,13 @@ export default function OnboardingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
 
-  // Lógica de las funciones (sin cambios)
   const handleFileSelect = (file: File) => {
     if (file.type !== 'application/pdf') { alert('Por favor, seleccione un archivo PDF'); return; }
     if (file.size > 10 * 1024 * 1024) { alert('El archivo no debe superar los 10MB'); return; }
     setSelectedFile(file);
     handleUploadCV(file);
   };
+
   const handleUploadCV = async (file: File) => {
     setIsLoading(true);
     const formData = new FormData();
@@ -42,6 +42,7 @@ export default function OnboardingPage() {
       setSelectedFile(null);
     } finally { setIsLoading(false); }
   };
+
   const handleSaveData = async (formData: ExtractedData) => {
     setIsLoading(true);
     setEmailError('');
@@ -67,6 +68,7 @@ export default function OnboardingPage() {
         alert('Error al guardar tus datos.');
     } finally { setIsLoading(false); }
   };
+  
   const handleConnectCalendar = () => {
     if (psychologistId) {
       window.location.href = `/api/auth/google?psychologist_id=${psychologistId}&redirect=/onboarding/success`;
@@ -74,15 +76,11 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="min-h-screen bg-brand-light font-sans">
+    <main className="min-h-screen bg-brand-cream font-sans">
       <div className="container mx-auto px-4 py-16 max-w-2xl">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            Completa tu registro
-          </h1>
-          <p className="text-gray-500 text-lg">
-            Sigue estos 3 simples pasos para formar parte de nuestra red.
-          </p>
+          <h1 className="text-4xl font-bold text-slate-800 mb-3">Completa tu registro</h1>
+          <p className="text-slate-600 text-lg">Sigue estos simples pasos para formar parte de nuestra red.</p>
         </div>
         <div className="space-y-6">
           <Step1UploadCV
@@ -113,9 +111,9 @@ export default function OnboardingPage() {
 
 function StepWrapper({ title, subtitle, isDisabled, children }: { title: string; subtitle: string; isDisabled: boolean; children: React.ReactNode }) {
     return (
-        <fieldset disabled={isDisabled} className={`bg-white rounded-lg shadow-sm border border-gray-200 p-8 transition-all duration-300 ${isDisabled ? 'opacity-50' : 'opacity-100'}`}>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-1">{title}</h2>
-            <p className="text-gray-500 mb-6">{subtitle}</p>
+        <fieldset disabled={isDisabled} className={`bg-white rounded-xl shadow-md border border-slate-200 p-8 transition-all duration-300 ${isDisabled ? 'opacity-50' : 'opacity-100'}`}>
+            <h2 className="text-2xl font-semibold text-slate-800 mb-1">{title}</h2>
+            <p className="text-slate-500 mb-6">{subtitle}</p>
             {children}
         </fieldset>
     );
@@ -123,21 +121,21 @@ function StepWrapper({ title, subtitle, isDisabled, children }: { title: string;
 
 function Step1UploadCV({ selectedFile, isLoading, onFileSelect }: Step1UploadProps) {
   return (
-    <StepWrapper title="1. Sube tu CV" subtitle="Extraeremos tu información automáticamente." isDisabled={false}>
-        <div className="border-2 border-dashed border-gray-200 rounded-lg p-8 text-center">
+    <StepWrapper title="Sube tu CV" subtitle="Extraeremos tu información automáticamente." isDisabled={false}>
+        <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
             <input
                 id="cv-upload" type="file" accept=".pdf" className="hidden"
                 onChange={(e) => { if (e.target.files?.[0]) onFileSelect(e.target.files[0]); }}
             />
             {isLoading ? (
-                <p className="font-medium text-gray-700">Procesando...</p>
+                <p className="font-medium text-slate-700">Procesando...</p>
             ) : selectedFile ? (
                 <div>
-                    <p className="font-semibold text-success">✓ {selectedFile.name}</p>
-                    <label htmlFor="cv-upload" className="mt-1 text-sm text-brand hover:underline font-medium cursor-pointer">Cambiar archivo</label>
+                    <p className="font-semibold text-green-600">✓ {selectedFile.name}</p>
+                    <label htmlFor="cv-upload" className="mt-1 text-sm text-brand-blue hover:underline font-medium cursor-pointer">Cambiar archivo</label>
                 </div>
             ) : (
-                <label htmlFor="cv-upload" className="bg-brand text-white font-semibold py-3 px-8 rounded-lg hover:bg-brand-dark transition-colors cursor-pointer">
+                <label htmlFor="cv-upload" className="bg-brand-blue text-white font-semibold py-3 px-8 rounded-lg hover:bg-opacity-90 transition-colors cursor-pointer">
                     Seleccionar CV en formato PDF
                 </label>
             )}
@@ -151,27 +149,27 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
     useEffect(() => { if (extractedData) setFormData(extractedData); }, [extractedData]);
 
     if (!extractedData) {
-        return <StepWrapper title="2. Revisa tu Información" subtitle="Completa el paso anterior para continuar." isDisabled={true}><div/></StepWrapper>;
+        return <StepWrapper title="Revisa tu Información" subtitle="Completa el paso anterior para continuar." isDisabled={true}><div/></StepWrapper>;
     }
     if (!formData) return null;
 
     return (
-        <StepWrapper title="2. Revisa tu Información" subtitle="Asegúrate de que todo esté correcto." isDisabled={isDisabled}>
+        <StepWrapper title="Revisa tu Información" subtitle="Asegúrate de que todo esté correcto." isDisabled={isDisabled}>
             <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo *</label>
-                        <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
+                        <input type="text" value={formData.nombre_completo} onChange={(e) => setFormData({...formData, nombre_completo: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                        <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Email *</label>
+                        <input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full px-3 py-2 border border-slate-300 rounded-lg" required />
                     </div>
                 </div>
                 {emailError && <p className="text-red-500 text-sm">{emailError}</p>}
                 <div className="flex gap-4 pt-2">
-                    <button type="button" onClick={onBack} className="w-full bg-gray-200 text-gray-900 py-3 rounded-lg font-semibold hover:bg-gray-300">Subir otro</button>
-                    <button type="submit" className="w-full bg-brand text-white py-3 rounded-lg font-semibold hover:bg-brand-dark">Guardar y Continuar</button>
+                    <button type="button" onClick={onBack} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Subir otro</button>
+                    <button type="submit" className="w-full bg-brand-blue text-white py-3 rounded-lg font-semibold hover:bg-opacity-90">Guardar y Continuar</button>
                 </div>
             </form>
         </StepWrapper>
@@ -180,10 +178,10 @@ function Step2Review({ extractedData, emailError, isDisabled, onSubmit, onBack }
 
 function Step3Calendar({ isDisabled, onConnectCalendar, onSkipCalendar }: Step3CalendarProps) {
     return (
-        <StepWrapper title="3. Conecta tu Calendario" subtitle="Sincroniza tu Google Calendar." isDisabled={isDisabled}>
+        <StepWrapper title="Conecta tu Calendario" subtitle="Sincroniza tu Google Calendar." isDisabled={isDisabled}>
             <div className="flex flex-col sm:flex-row gap-4">
-                <button onClick={onConnectCalendar} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">Conectar Google Calendar</button>
-                <button onClick={onSkipCalendar} className="w-full bg-gray-200 text-gray-900 py-3 rounded-lg font-semibold hover:bg-gray-300">Omitir por ahora</button>
+                <button onClick={onConnectCalendar} className="w-full bg-brand-orange text-white py-3 rounded-lg font-semibold hover:bg-opacity-90">Conectar Google Calendar</button>
+                <button onClick={onSkipCalendar} className="w-full bg-slate-200 text-slate-800 py-3 rounded-lg font-semibold hover:bg-slate-300">Omitir por ahora</button>
             </div>
         </StepWrapper>
     );
