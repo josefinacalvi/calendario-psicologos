@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // <--- NUEVO NOMBRE
-);
+// Crear cliente solo cuando se necesite (runtime, no build-time)
+function getSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Faltan las variables de entorno de Supabase.');
+  }
+  
+  return createClient(supabaseUrl, supabaseKey);
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -15,13 +22,15 @@ export async function GET(request: Request) {
   }
 
   try {
+    const supabase = getSupabaseClient();
+    
     const { data, error } = await supabase
-      .from('psychologists')
+      .from('perfiles_psicologos')  // ← TABLA CORRECTA
       .select('id')
       .eq('email', email)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+    if (error && error.code !== 'PGRST116') {
       throw error;
     }
 
