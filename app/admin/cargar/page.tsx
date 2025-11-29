@@ -31,7 +31,7 @@ export default function CargarPerfilPage() {
             Carga de Perfil de Profesional
           </h1>
           <p style={{ marginTop: '0.5rem', fontSize: '1.125rem', color: '#6b7280' }}>
-            Completa manualmente los datos del psicólogo.
+            Completa manualmente los datos del psicólogo post-entrevista.
           </p>
         </header>
 
@@ -51,22 +51,44 @@ export default function CargarPerfilPage() {
 
         <form id="perfilForm" onSubmit={handleSubmit}>
           
+          {/* SECCIÓN 1: Datos de contacto (NUEVO) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Nombre y Apellido *</label>
               <input type="text" name="nombre_completo" required style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Orientación / estilo clínico *</label>
-              <input type="text" name="orientacion_clinica" required style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Email *</label>
+              <input type="email" name="email" required placeholder="correo@ejemplo.com" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
             </div>
           </div>
 
+          {/* SECCIÓN 2: Teléfono y Fecha nacimiento (NUEVO) */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Teléfono</label>
+              <input type="tel" name="phone" placeholder="Ej: +54 11 1234-5678" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Fecha de nacimiento</label>
+              <input type="date" name="fecha_nacimiento" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
+            </div>
+          </div>
+
+          {/* SECCIÓN 3: Orientación clínica */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Orientación / estilo clínico *</label>
+              <input type="text" name="orientacion_clinica" required style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
+            </div>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Especialidades (separadas por coma)</label>
               <input type="text" name="especialidades" placeholder="Ej: Ansiedad, Depresión" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
             </div>
+          </div>
+
+          {/* SECCIÓN 4: Modalidad */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Modalidad *</label>
               <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
@@ -78,19 +100,19 @@ export default function CargarPerfilPage() {
                 ))}
               </div>
             </div>
-          </div>
-          
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Zona (si atiende presencial)</label>
               <input type="text" name="zona" placeholder="Ej: Palermo, CABA" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }} />
             </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Disponibilidad general *</label>
-              <textarea name="disponibilidad_general" rows={2} required placeholder="Ej: Lunes y Miércoles de 16:00 a 20:00" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }}></textarea>
-            </div>
+          </div>
+          
+          {/* SECCIÓN 5: Disponibilidad */}
+          <div style={{ paddingBottom: '1.5rem', borderBottom: '1px solid #f3f4f6', marginBottom: '1.5rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Disponibilidad general *</label>
+            <textarea name="disponibilidad_general" rows={2} required placeholder="Ej: Lunes y Miércoles de 16:00 a 20:00" style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '0.75rem', fontSize: '1rem' }}></textarea>
           </div>
 
+          {/* SECCIÓN 6: Bio */}
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ marginBottom: '1rem' }}>
               <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: '#374151', marginBottom: '0.25rem' }}>Frase breve: ¿Por qué él/ella? *</label>
@@ -102,11 +124,15 @@ export default function CargarPerfilPage() {
             </div>
           </div>
 
-          <div style={{ paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}>
-              <input type="checkbox" name="estado_membresia" defaultChecked style={{ width: '1.25rem', height: '1.25rem' }} />
-              <span style={{ fontWeight: 600 }}>Estado de membresía: <span style={{ color: '#0d9488' }}>Activo</span></span>
-            </label>
+          {/* SECCIÓN 7: Info del sistema */}
+          <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid #bbf7d0' }}>
+            <p style={{ fontSize: '0.875rem', color: '#166534', margin: 0 }}>
+              ℹ️ El psicólogo será guardado con estado <strong>ENTREVISTADO</strong>. 
+              Recibirá automáticamente el email de invitación a suscribirse.
+            </p>
+          </div>
+
+          <div style={{ paddingTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" disabled={isSubmitting} style={{ padding: '0.75rem 2rem', borderRadius: '9999px', border: 'none', backgroundColor: isSubmitting ? '#93c5fd' : '#5B8AD1', color: 'white', fontWeight: 600, fontSize: '1rem', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               {isSubmitting ? 'Cargando...' : 'Cargar Perfil en Supabase'}
             </button>
