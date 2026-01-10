@@ -131,7 +131,7 @@ export default function DashboardPage() {
             { id: 'payments', label: '💰 Ventas' },
             { id: 'emails', label: '📧 Emails' },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} style={tabStyle(activeTab === tab.id)}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id as TabType)} style={tabStyle(activeTab === tab.id)}>
               {tab.label}
             </button>
           ))}
