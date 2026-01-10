@@ -9,6 +9,8 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- TIPOS ---
+type TabType = 'overview' | 'psychologists' | 'leads' | 'patients' | 'payments' | 'emails';
+
 interface Lead { id: number; name: string; email: string | null; phone: string | null; source: string; created_at: string; }
 interface Psychologist { id: string; nombre_completo: string; email: string; estado: string; modalidad: string; fecha_pago: string | null; fecha_vencimiento: string | null; created_at: string; }
 interface Patient { id: number; name: string; email: string; phone: string | null; created_at: string; }
@@ -22,7 +24,7 @@ export default function DashboardPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [emailLogs, setEmailLogs] = useState<EmailLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'psychologists' | 'leads' | 'patients' | 'payments' | 'emails'>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [whatsappStatus, setWhatsappStatus] = useState<'checking' | 'open' | 'close' | 'connecting' | 'error'>('checking');
 
   useEffect(() => {
@@ -52,7 +54,6 @@ export default function DashboardPage() {
   // Métricas
   const activePsychologists = psychologists.filter(p => p.estado === 'ACTIVO').length;
   const interviewedPsychologists = psychologists.filter(p => p.estado === 'ENTREVISTADO').length;
-  const expiredPsychologists = psychologists.filter(p => p.fecha_vencimiento && new Date(p.fecha_vencimiento) < new Date()).length;
   const expiringPsychologists = psychologists.filter(p => {
     if (!p.fecha_vencimiento || p.estado !== 'ACTIVO') return false;
     const v = new Date(p.fecha_vencimiento);
@@ -110,7 +111,7 @@ export default function DashboardPage() {
             ].map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as TabType)}
                 className={`py-4 px-2 border-b-2 font-medium text-sm transition flex items-center gap-2 whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-[#5B8AD1] text-[#5B8AD1]'
