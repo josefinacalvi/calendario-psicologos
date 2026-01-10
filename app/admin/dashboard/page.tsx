@@ -9,54 +9,13 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- TIPOS ---
-interface Lead {
-  id: number;
-  name: string;
-  email: string | null;
-  phone: string | null;
-  source: string;
-  created_at: string;
-}
-
-interface Psychologist {
-  id: string;
-  nombre_completo: string;
-  email: string;
-  estado: string;
-  modalidad: string;
-  fecha_pago: string | null;
-  fecha_vencimiento: string | null;
-  created_at: string;
-}
-
-interface Patient {
-  id: number;
-  name: string;
-  email: string;
-  phone: string | null;
-  created_at: string;
-}
-
-interface Payment {
-  id: number;
-  amount: number;
-  status: string;
-  created_at: string;
-  psicologo_id: string;
-  payment_provider: string;
-}
-
-interface EmailLog {
-  id: number;
-  patient_email: string;
-  email_subject: string;
-  email_tema: string;
-  sent_at: string;
-  status: string;
-}
+interface Lead { id: number; name: string; email: string | null; phone: string | null; source: string; created_at: string; }
+interface Psychologist { id: string; nombre_completo: string; email: string; estado: string; modalidad: string; fecha_pago: string | null; fecha_vencimiento: string | null; created_at: string; }
+interface Patient { id: number; name: string; email: string; phone: string | null; created_at: string; }
+interface Payment { id: number; amount: number; status: string; created_at: string; psicologo_id: string; payment_provider: string; }
+interface EmailLog { id: number; patient_email: string; email_subject: string; email_tema: string; sent_at: string; status: string; }
 
 export default function DashboardPage() {
-  // --- ESTADOS ---
   const [leads, setLeads] = useState<Lead[]>([]);
   const [psychologists, setPsychologists] = useState<Psychologist[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -66,27 +25,16 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'psychologists' | 'leads' | 'patients' | 'payments' | 'emails'>('overview');
   const [whatsappStatus, setWhatsappStatus] = useState<'checking' | 'open' | 'close' | 'connecting' | 'error'>('checking');
 
-  // --- CARGA DE DATOS ---
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      
-      // WhatsApp Status (simulado o real según tu API)
       try {
-        const whatsappRes = await fetch('/api/whatsapp-status');
-        if (whatsappRes.ok) {
-            const whatsappData = await whatsappRes.json();
-            setWhatsappStatus(whatsappData.state || 'error');
-        } else {
-            setWhatsappStatus('error');
-        }
-      } catch {
-        setWhatsappStatus('error');
-      }
-      
-      // Consultas Supabase
+        const waRes = await fetch('/api/whatsapp-status').catch(() => null);
+        if (waRes?.ok) { const waData = await waRes.json(); setWhatsappStatus(waData.state || 'error'); } else { setWhatsappStatus('error'); }
+      } catch { setWhatsappStatus('error'); }
+
       const { data: leadsData } = await supabase.from('patient_leads').select('*').order('created_at', { ascending: false });
-      const { data: psychologistsData } = await supabase.from('perfiles_psicologos').select('id, nombre_completo, email, estado, modalidad, fecha_pago, fecha_vencimiento, created_at').order('created_at', { ascending: false });
+      const { data: psychologistsData } = await supabase.from('perfiles_psicologos').select('*').order('created_at', { ascending: false });
       const { data: patientsData } = await supabase.from('patients').select('*').order('created_at', { ascending: false });
       const { data: paymentsData } = await supabase.from('payment_transactions').select('*').order('created_at', { ascending: false });
       const { data: emailLogsData } = await supabase.from('email_marketing_log').select('*').order('sent_at', { ascending: false }).limit(50);
@@ -98,272 +46,209 @@ export default function DashboardPage() {
       setEmailLogs(emailLogsData || []);
       setLoading(false);
     }
-
     fetchData();
   }, []);
 
-  // --- LÓGICA DE MÉTRICAS ---
+  // Métricas
   const activePsychologists = psychologists.filter(p => p.estado === 'ACTIVO').length;
   const interviewedPsychologists = psychologists.filter(p => p.estado === 'ENTREVISTADO').length;
-  const expiredPsychologists = psychologists.filter(p => {
-    if (!p.fecha_vencimiento) return false;
-    return new Date(p.fecha_vencimiento) < new Date();
-  }).length;
-  
+  const expiredPsychologists = psychologists.filter(p => p.fecha_vencimiento && new Date(p.fecha_vencimiento) < new Date()).length;
   const expiringPsychologists = psychologists.filter(p => {
     if (!p.fecha_vencimiento || p.estado !== 'ACTIVO') return false;
-    const vencimiento = new Date(p.fecha_vencimiento);
-    const hoy = new Date();
-    const en7Dias = new Date();
-    en7Dias.setDate(en7Dias.getDate() + 7);
-    return vencimiento > hoy && vencimiento <= en7Dias;
+    const v = new Date(p.fecha_vencimiento);
+    const h = new Date();
+    const d7 = new Date(); d7.setDate(d7.getDate() + 7);
+    return v > h && v <= d7;
   });
 
-  const getDaysRemaining = (fechaVencimiento: string | null): number | null => {
-    if (!fechaVencimiento) return null;
-    const vencimiento = new Date(fechaVencimiento);
-    const hoy = new Date();
-    const diffTime = vencimiento.getTime() - hoy.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const getDays = (date: string | null) => {
+    if (!date) return null;
+    return Math.ceil((new Date(date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const totalLeads = leads.length + patients.length;
-  const leadsThisWeek = [...leads, ...patients].filter(l => {
-    const createdAt = new Date(l.created_at);
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return createdAt > weekAgo;
-  }).length;
-  
   const approvedPayments = payments.filter(p => p.status === 'approved' || p.status === 'completed');
   const totalRevenue = approvedPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
-  // Ventas por mes logic
-  const salesByMonth = approvedPayments.reduce((acc, payment) => {
-    const date = new Date(payment.created_at);
-    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const monthName = date.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
-    if (!acc[monthKey]) acc[monthKey] = { month: monthName, total: 0, count: 0 };
-    acc[monthKey].total += Number(payment.amount);
-    acc[monthKey].count += 1;
-    return acc;
-  }, {} as Record<string, { month: string; total: number; count: number }>);
-
-  const salesByMonthArray = Object.entries(salesByMonth)
-    .sort(([a], [b]) => b.localeCompare(a))
-    .slice(0, 6)
-    .map(([_, data]) => data);
-
-  // Formatters
-  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
-  const formatDateTime = (d: string | null) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
   const formatCurrency = (amount: number) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(amount);
+  const formatDate = (d: string | null) => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
 
-  // --- ESTILOS INLINE (Para asegurar el diseño) ---
-  const containerStyle = { minHeight: '100vh', backgroundColor: '#F8F3ED', paddingBottom: '2rem' };
-  const cardStyle = { backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', padding: '1.5rem', border: '1px solid #e5e7eb' };
-  const headerStyle = { backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', marginBottom: '1rem' };
-  const titleStyle = { fontSize: '1.5rem', fontWeight: 700, color: '#115e59', margin: 0 };
-  const subTitleStyle = { fontSize: '1.125rem', fontWeight: 600, color: '#374151', marginBottom: '1rem' };
-  const metricLabelStyle = { fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' };
-  const metricValueStyle = { fontSize: '1.875rem', fontWeight: 700, color: '#111827', margin: 0 };
-  const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2rem' };
-  const tableHeaderStyle = { padding: '0.75rem', textAlign: 'left' as const, fontSize: '0.875rem', fontWeight: 600, color: '#6b7280', borderBottom: '1px solid #e5e7eb' };
-  const tableCellStyle = { padding: '0.75rem', fontSize: '0.875rem', color: '#1f2937', borderBottom: '1px solid #f3f4f6' };
-
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F8F3ED' }}>Cargando...</div>;
+  if (loading) return <div className="min-h-screen bg-[#F8F3ED] flex items-center justify-center text-[#5B8AD1] font-bold animate-pulse">Cargando Dashboard...</div>;
 
   return (
-    <div style={containerStyle}>
-      {/* HEADER */}
-      <div style={headerStyle}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="min-h-screen bg-[#F8F3ED] text-gray-800 font-sans">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-20 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
           <div>
-            <h1 style={titleStyle}>Dashboard</h1>
-            <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: 0 }}>Panel de administración - The Safe Spot</p>
+            <h1 className="text-2xl font-bold text-[#115e59]">Dashboard Admin</h1>
+            <p className="text-sm text-gray-500">The Safe Spot</p>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-             {/* Estado WhatsApp */}
-            <div style={{ padding: '0.5rem 1rem', borderRadius: '9999px', backgroundColor: whatsappStatus === 'open' ? '#dcfce7' : '#f3f4f6', color: whatsappStatus === 'open' ? '#166534' : '#374151', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ height: '8px', width: '8px', borderRadius: '50%', backgroundColor: whatsappStatus === 'open' ? '#22c55e' : '#9ca3af' }}></span>
-                WhatsApp: {whatsappStatus === 'open' ? 'Conectado' : whatsappStatus}
+          <div className="flex items-center gap-3">
+            <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 ${whatsappStatus === 'open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <div className={`w-2 h-2 rounded-full ${whatsappStatus === 'open' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              WA: {whatsappStatus === 'open' ? 'Online' : 'Offline'}
             </div>
-            <a href="/admin/cargar" style={{ backgroundColor: '#5B8AD1', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', textDecoration: 'none', fontWeight: 500, fontSize: '0.875rem' }}>
+            <a href="/admin/cargar" className="bg-[#5B8AD1] hover:bg-[#4a7ac0] text-white px-4 py-2 rounded-lg shadow transition text-sm font-medium">
               + Cargar Psicólogo
             </a>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* TABS */}
-      <div style={{ backgroundColor: 'white', borderBottom: '1px solid #e5e7eb', marginBottom: '2rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem', display: 'flex', overflowX: 'auto', gap: '2rem' }}>
-          {[
-            { id: 'overview', label: '📊 Resumen' },
-            { id: 'psychologists', label: '🧑‍⚕️ Psicólogos' },
-            { id: 'leads', label: '💬 Leads WA' },
-            { id: 'patients', label: '📝 Leads Tally' },
-            { id: 'payments', label: '💰 Ventas' },
-            { id: 'emails', label: '📧 Emails' },
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              style={{
-                padding: '1rem 0',
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                color: activeTab === tab.id ? '#4A6FA5' : '#6b7280',
-                borderBottom: activeTab === tab.id ? '2px solid #4A6FA5' : '2px solid transparent'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 overflow-x-auto">
+          <nav className="flex space-x-6">
+            {[
+              { id: 'overview', icon: '📊', label: 'Resumen' },
+              { id: 'psychologists', icon: '🧑‍⚕️', label: 'Psicólogos' },
+              { id: 'leads', icon: '💬', label: 'Leads WA' },
+              { id: 'patients', icon: '📝', label: 'Leads Tally' },
+              { id: 'payments', icon: '💰', label: 'Ventas' },
+              { id: 'emails', icon: '📧', label: 'Emails' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition flex items-center gap-2 whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? 'border-[#5B8AD1] text-[#5B8AD1]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <span>{tab.icon}</span> {tab.label}
+              </button>
+            ))}
+          </nav>
         </div>
       </div>
 
-      {/* CONTENIDO */}
-      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '0 1rem' }}>
+      {/* Contenido */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
         
-        {/* === OVERVIEW === */}
+        {/* OVERVIEW */}
         {activeTab === 'overview' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            
-            {/* Sección Psicólogos */}
-            <section>
-              <h3 style={subTitleStyle}>🧑‍⚕️ Métricas Psicólogos</h3>
-              <div style={gridStyle}>
-                <div style={cardStyle}>
-                  <p style={metricLabelStyle}>Activos</p>
-                  <p style={{ ...metricValueStyle, color: '#16a34a' }}>{activePsychologists}</p>
-                </div>
-                <div style={cardStyle}>
-                  <p style={metricLabelStyle}>Entrevistados</p>
-                  <p style={{ ...metricValueStyle, color: '#ca8a04' }}>{interviewedPsychologists}</p>
-                </div>
-                <div style={cardStyle}>
-                   <p style={metricLabelStyle}>Por Vencer (7 días)</p>
-                   <p style={{ ...metricValueStyle, color: '#ea580c' }}>{expiringPsychologists.length}</p>
+          <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Tarjetas Principales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p className="text-gray-500 text-sm font-medium">Total Leads</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{totalLeads}</p>
+                <div className="mt-2 text-xs text-green-600 font-medium bg-green-50 inline-block px-2 py-1 rounded">
+                  {leads.filter(l => l.source === 'whatsapp').length} WA • {patients.length} Tally
                 </div>
               </div>
-            </section>
+              
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p className="text-gray-500 text-sm font-medium">Psicólogos Activos</p>
+                <p className="text-3xl font-bold text-[#115e59] mt-2">{activePsychologists}</p>
+                <p className="text-xs text-gray-400 mt-1">de {psychologists.length} registrados</p>
+              </div>
 
-             {/* Sección Leads */}
-             <section>
-              <h3 style={subTitleStyle}>👥 Pacientes Potenciales</h3>
-              <div style={gridStyle}>
-                <div style={cardStyle}>
-                  <p style={metricLabelStyle}>Total Leads</p>
-                  <p style={metricValueStyle}>{totalLeads}</p>
-                  <p style={{ fontSize: '0.75rem', color: '#16a34a', marginTop: '0.25rem' }}>+{leadsThisWeek} esta semana</p>
-                </div>
-                <div style={cardStyle}>
-                  <p style={metricLabelStyle}>WhatsApp</p>
-                  <p style={{ ...metricValueStyle, color: '#25D366' }}>{leads.filter(l => l.source === 'whatsapp').length}</p>
-                </div>
-                <div style={cardStyle}>
-                  <p style={metricLabelStyle}>Tally Form</p>
-                  <p style={{ ...metricValueStyle, color: '#9333ea' }}>{patients.length}</p>
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <p className="text-gray-500 text-sm font-medium">Ingresos Totales</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">{formatCurrency(totalRevenue)}</p>
+                <p className="text-xs text-gray-400 mt-1">{approvedPayments.length} transacciones</p>
+              </div>
+
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                <div className="absolute right-0 top-0 p-4 opacity-10 text-6xl">⚠️</div>
+                <p className="text-gray-500 text-sm font-medium">Por Vencer (7 días)</p>
+                <p className={`text-3xl font-bold mt-2 ${expiringPsychologists.length > 0 ? 'text-orange-500' : 'text-gray-900'}`}>
+                  {expiringPsychologists.length}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Atención requerida</p>
+              </div>
+            </div>
+
+            {/* Listado Rápido Vencimientos */}
+            {expiringPsychologists.length > 0 && (
+              <div className="bg-orange-50 border border-orange-100 rounded-xl p-6">
+                <h3 className="text-orange-800 font-semibold mb-4">⚠️ Próximos Vencimientos</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {expiringPsychologists.map(p => (
+                    <div key={p.id} className="bg-white p-4 rounded-lg shadow-sm flex justify-between items-center">
+                      <div>
+                        <p className="font-medium text-gray-900">{p.nombre_completo}</p>
+                        <p className="text-xs text-gray-500">Vence: {formatDate(p.fecha_vencimiento)}</p>
+                      </div>
+                      <span className="text-orange-600 font-bold text-sm">{getDays(p.fecha_vencimiento)} días</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </section>
+            )}
           </div>
         )}
 
-        {/* === TABLAS GENÉRICAS === */}
+        {/* TABLA GENÉRICA (Se adapta según el tab) */}
         {activeTab !== 'overview' && (
-          <div style={cardStyle}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                <thead>
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden animate-in fade-in duration-300">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 text-gray-500 border-b border-gray-100">
                   <tr>
-                    {/* Headers dinámicos según el tab */}
-                    {activeTab === 'psychologists' && <><th style={tableHeaderStyle}>Nombre</th><th style={tableHeaderStyle}>Email</th><th style={tableHeaderStyle}>Estado</th><th style={tableHeaderStyle}>Vencimiento</th></>}
-                    {activeTab === 'leads' && <><th style={tableHeaderStyle}>Nombre</th><th style={tableHeaderStyle}>Teléfono</th><th style={tableHeaderStyle}>Fecha</th><th style={tableHeaderStyle}>Acción</th></>}
-                    {activeTab === 'patients' && <><th style={tableHeaderStyle}>Nombre</th><th style={tableHeaderStyle}>Email</th><th style={tableHeaderStyle}>Fecha</th><th style={tableHeaderStyle}>Acción</th></>}
-                    {activeTab === 'payments' && <><th style={tableHeaderStyle}>Monto</th><th style={tableHeaderStyle}>Estado</th><th style={tableHeaderStyle}>Fecha</th></>}
-                    {activeTab === 'emails' && <><th style={tableHeaderStyle}>Destinatario</th><th style={tableHeaderStyle}>Asunto</th><th style={tableHeaderStyle}>Estado</th></>}
+                    {activeTab === 'psychologists' && <><th className="p-4 font-medium">Nombre</th><th className="p-4 font-medium">Email</th><th className="p-4 font-medium">Estado</th><th className="p-4 font-medium">Vencimiento</th></>}
+                    {activeTab === 'leads' && <><th className="p-4 font-medium">Nombre</th><th className="p-4 font-medium">Teléfono</th><th className="p-4 font-medium">Fecha</th><th className="p-4 font-medium">Acción</th></>}
+                    {activeTab === 'patients' && <><th className="p-4 font-medium">Nombre</th><th className="p-4 font-medium">Email</th><th className="p-4 font-medium">Fecha</th><th className="p-4 font-medium">Acción</th></>}
+                    {activeTab === 'payments' && <><th className="p-4 font-medium">Monto</th><th className="p-4 font-medium">Estado</th><th className="p-4 font-medium">Fecha</th></>}
+                    {activeTab === 'emails' && <><th className="p-4 font-medium">Destinatario</th><th className="p-4 font-medium">Asunto</th><th className="p-4 font-medium">Estado</th></>}
                   </tr>
                 </thead>
-                <tbody>
-                  
+                <tbody className="divide-y divide-gray-50">
                   {activeTab === 'psychologists' && psychologists.map(p => {
-                      const days = getDaysRemaining(p.fecha_vencimiento);
-                      return (
-                        <tr key={p.id}>
-                            <td style={{...tableCellStyle, fontWeight: 500}}>{p.nombre_completo}</td>
-                            <td style={tableCellStyle}>{p.email}</td>
-                            <td style={tableCellStyle}>
-                                <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: p.estado === 'ACTIVO' ? '#dcfce7' : '#fef3c7', color: p.estado === 'ACTIVO' ? '#166534' : '#854d0e' }}>
-                                    {p.estado}
-                                </span>
-                            </td>
-                            <td style={tableCellStyle}>
-                                {days !== null ? (
-                                    <span style={{ color: days <= 7 ? '#ea580c' : '#374151', fontWeight: days <= 7 ? 600 : 400 }}>
-                                        {days} días ({formatDate(p.fecha_vencimiento)})
-                                    </span>
-                                ) : '-'}
-                            </td>
-                        </tr>
-                      );
+                    const days = getDays(p.fecha_vencimiento);
+                    return (
+                      <tr key={p.id} className="hover:bg-gray-50 transition">
+                        <td className="p-4 font-medium text-gray-900">{p.nombre_completo}</td>
+                        <td className="p-4 text-gray-500">{p.email}</td>
+                        <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-semibold ${p.estado === 'ACTIVO' ? 'bg-green-100 text-green-700' : p.estado === 'ENTREVISTADO' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'}`}>{p.estado}</span></td>
+                        <td className="p-4"><span className={`${days !== null && days <= 7 ? 'text-orange-600 font-bold' : 'text-gray-500'}`}>{days !== null ? `${days} días` : '-'}</span></td>
+                      </tr>
+                    );
                   })}
-
+                  
                   {activeTab === 'leads' && leads.map(l => (
-                    <tr key={l.id}>
-                      <td style={{...tableCellStyle, fontWeight: 500}}>{l.name || 'Sin nombre'}</td>
-                      <td style={tableCellStyle}>{l.phone}</td>
-                      <td style={tableCellStyle}>{formatDateTime(l.created_at)}</td>
-                      <td style={tableCellStyle}>
-                         {l.phone && <a href={`https://wa.me/${l.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" style={{color:'#25D366', textDecoration:'none', fontWeight:600}}>💬 Abrir WA</a>}
+                    <tr key={l.id} className="hover:bg-gray-50 transition">
+                      <td className="p-4 font-medium">{l.name || 'Desconocido'}</td>
+                      <td className="p-4 text-gray-500">{l.phone}</td>
+                      <td className="p-4 text-gray-400">{formatDate(l.created_at)}</td>
+                      <td className="p-4">
+                        {l.phone && <a href={`https://wa.me/${l.phone.replace(/[^0-9]/g, '')}`} target="_blank" className="text-green-600 hover:underline font-medium">💬 WhatsApp</a>}
                       </td>
                     </tr>
                   ))}
 
                   {activeTab === 'patients' && patients.map(p => (
-                    <tr key={p.id}>
-                      <td style={{...tableCellStyle, fontWeight: 500}}>{p.name}</td>
-                      <td style={tableCellStyle}>{p.email}</td>
-                      <td style={tableCellStyle}>{formatDateTime(p.created_at)}</td>
-                      <td style={tableCellStyle}>
-                        <a href={`mailto:${p.email}`} style={{color:'#4A6FA5', textDecoration:'none', fontWeight:600}}>✉️ Email</a>
-                      </td>
+                    <tr key={p.id} className="hover:bg-gray-50 transition">
+                      <td className="p-4 font-medium">{p.name}</td>
+                      <td className="p-4 text-gray-500">{p.email}</td>
+                      <td className="p-4 text-gray-400">{formatDate(p.created_at)}</td>
+                      <td className="p-4"><a href={`mailto:${p.email}`} className="text-[#5B8AD1] hover:underline">✉️ Email</a></td>
                     </tr>
                   ))}
 
-                   {activeTab === 'payments' && payments.map(p => (
-                    <tr key={p.id}>
-                      <td style={{...tableCellStyle, fontWeight: 600}}>{formatCurrency(p.amount)}</td>
-                      <td style={tableCellStyle}>
-                         <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: p.status === 'approved' ? '#dcfce7' : '#fee2e2', color: p.status === 'approved' ? '#166534' : '#991b1b' }}>
-                            {p.status}
-                         </span>
-                      </td>
-                      <td style={tableCellStyle}>{formatDateTime(p.created_at)}</td>
+                  {activeTab === 'payments' && payments.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition">
+                      <td className="p-4 font-bold text-gray-900">{formatCurrency(p.amount)}</td>
+                      <td className="p-4"><span className={`px-2 py-1 rounded text-xs font-semibold ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{p.status}</span></td>
+                      <td className="p-4 text-gray-400">{formatDate(p.created_at)}</td>
                     </tr>
                   ))}
 
-                   {activeTab === 'emails' && emailLogs.map(e => (
-                    <tr key={e.id}>
-                      <td style={tableCellStyle}>{e.patient_email}</td>
-                      <td style={tableCellStyle}>{e.email_subject}</td>
-                      <td style={tableCellStyle}>
-                         <span style={{ padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, backgroundColor: e.status === 'sent' ? '#dcfce7' : '#fee2e2', color: e.status === 'sent' ? '#166534' : '#991b1b' }}>
-                            {e.status}
-                         </span>
-                      </td>
+                  {activeTab === 'emails' && emailLogs.map(e => (
+                    <tr key={e.id} className="hover:bg-gray-50 transition">
+                      <td className="p-4 text-gray-600">{e.patient_email}</td>
+                      <td className="p-4 font-medium text-gray-900">{e.email_subject}</td>
+                      <td className="p-4"><span className={`px-2 py-1 rounded text-xs ${e.status === 'sent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{e.status}</span></td>
                     </tr>
                   ))}
-
                 </tbody>
               </table>
             </div>
           </div>
         )}
-
       </main>
     </div>
   );
