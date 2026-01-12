@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     const response = await fetch(
-      'https://evolution-api-production-4bab.up.railway.app/instance/connectionState/The safe spot',
+      'https://evolution-api-production-4bab.up.railway.app/instance/connectionState/The%20safe%20spot',
       {
         headers: {
           'apikey': '8F69B53CE95C-445F-B43A-67C403281790',
@@ -22,8 +22,8 @@ export async function GET() {
     const data = await response.json();
     
     return NextResponse.json({
-      instance: data.instance,
-      state: data.state || 'unknown'
+      instance: data.instance?.instanceName || 'The safe spot',
+      state: data.instance?.state || 'unknown'
     });
     
   } catch (error) {
