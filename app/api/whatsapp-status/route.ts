@@ -21,7 +21,6 @@ export async function GET() {
 
     const data = await response.json();
     
-    // Evolution API devuelve { instance: "...", state: "open" | "close" | "connecting" }
     return NextResponse.json({
       instance: data.instance,
       state: data.state || 'unknown'
